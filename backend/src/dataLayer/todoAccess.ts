@@ -4,10 +4,11 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { TodoItem } from '../models/TodoItem'
 import { TodoUpdate } from '../models/TodoUpdate'
 import { String } from 'aws-sdk/clients/batch'
+import { createLogger } from '../utils/logger'
 
 const bucketName = process.env.TODO_S3_BUCKET
 const urlExpiration = process.env.SIGNED_URL_EXPIRATION
-
+const logger = createLogger('dataLayer')
 
 
 
@@ -26,9 +27,8 @@ export class TodoAccess {
   }
 
   async getAllTodos(userId: string): Promise<TodoItem[]> {
-    console.log('Getting all todos')
+    logger.info('Getting all todos')
     
-
     const result = await this.docClient.query({
       TableName : this.todoTable,
       IndexName : todoIdIndex,
@@ -43,6 +43,7 @@ export class TodoAccess {
 
 
   async createTodo(todo: TodoItem): Promise<TodoItem> {
+    logger.info('creating todo')
     await this.docClient.put({
       TableName: this.todoTable,
       Item: todo
@@ -52,6 +53,7 @@ export class TodoAccess {
   }
   
   async deleteTodo(todoId: String,userId : String): Promise<boolean> {
+    logger.info('Deleting todo')
     await this.docClient.delete(
     {TableName: this.todoTable,
     Key:{"todoId": todoId, "userId": userId}}).promise()
@@ -60,7 +62,7 @@ export class TodoAccess {
 
 
   async generateUploadUrl(todoId: string,userId: string): Promise<string> {
-
+    logger.info('generateUploadUrl')
     const url = s3.getSignedUrl('putObject', {
       Bucket: bucketName,
       Key: todoId,
@@ -81,6 +83,7 @@ export class TodoAccess {
   }
 
   async updateTodo(todo: TodoUpdate,todoId: string, userId: string): Promise<boolean> {
+    logger.info('Updating todo')
     await this.docClient.update(
     {
     TableName: this.todoTable,
@@ -105,7 +108,7 @@ export class TodoAccess {
 
 function createDynamoDBClient() {
   if (process.env.IS_OFFLINE) {
-    console.log('Creating a local DynamoDB instance')
+    logger.info('Creating a local DynamoDB instance')
     return new XAWS.DynamoDB.DocumentClient({
       region: 'localhost',
       endpoint: 'http://localhost:8000'

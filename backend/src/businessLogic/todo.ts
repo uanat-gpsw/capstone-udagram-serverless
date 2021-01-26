@@ -5,10 +5,13 @@ import { TodoAccess } from '../dataLayer/todoAccess'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 import { parseUserId } from '../auth/utils'
+import { createLogger } from '../utils/logger'
 
+const logger = createLogger('businessLogic')
 const todoAccess = new TodoAccess()
 export async function getAllTodos(jwtToken: string): Promise<TodoItem[]> {
-   const userId = parseUserId(jwtToken)
+  logger.info("Calling getAllTodos")
+  const userId = parseUserId(jwtToken)
   return todoAccess.getAllTodos(userId)
 }
 
@@ -19,7 +22,7 @@ export async function createTodo(
 
   const itemId = uuid.v4()
   const userId = parseUserId(jwtToken)
-
+  logger.info("Calling createTodo")
   return await todoAccess.createTodo({
     todoId: itemId,
     userId: userId,
@@ -35,6 +38,7 @@ export async function deleteTodo(
    todoId: string,jwtToken : string
 ): Promise<boolean> {
   const userId = parseUserId(jwtToken)
+  logger.info("Calling deleteTodo")
   return await todoAccess.deleteTodo(todoId,userId)
 }
 
@@ -42,6 +46,7 @@ export async function generateUploadUrl(
     todoId: string, jwtToken: string
  ): Promise<string> {
     const userId = parseUserId(jwtToken)
+    logger.info("Calling generateUploadUrl")
    return await todoAccess.generateUploadUrl(todoId,userId)
  }
 
@@ -49,6 +54,7 @@ export async function updateTodo(
     UpdateTodoRequest: UpdateTodoRequest,todoId : string, jwtToken :string
  ): Promise<boolean> {
    const userId = parseUserId(jwtToken)
+   logger.info("Calling updateTodo")
    return await todoAccess.updateTodo(UpdateTodoRequest,todoId,userId)
  }
 
