@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "updatetodo",
+    "type": "object",
+    "properties": {
+      "firstName": {
+        "type": "string"
+      },
+      "lastName": {
+        "type": "string"
+      },
+      "emailId": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "firstName",
+      "lastName",
+      "emailId"
+    ],
+    "additionalProperties": false
+  }
+  
