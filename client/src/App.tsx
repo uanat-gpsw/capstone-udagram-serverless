@@ -7,6 +7,9 @@ import { EditTodo } from './components/EditTodo'
 import { LogIn } from './components/LogIn'
 import { NotFound } from './components/NotFound'
 import { Todos } from './components/Todos'
+import {Profile} from './components/Profile'
+import {Users} from './components/Users'
+import { FollowingTodos } from './components/FollowTodos'
 
 export interface AppProps {}
 
@@ -60,6 +63,18 @@ export default class App extends Component<AppProps, AppState> {
           <Link to="/">Home</Link>
         </Menu.Item>
 
+        <Menu.Item name="profile">
+          <Link to="/profile">Profile</Link>
+        </Menu.Item>
+
+        <Menu.Item name="users">
+          <Link to="/users">Users</Link>
+        </Menu.Item>
+
+        <Menu.Item name="followingtodos">
+          <Link to="/followtodo">Following</Link>
+        </Menu.Item>
+
         <Menu.Menu position="right">{this.logInLogOutButton()}</Menu.Menu>
       </Menu>
     )
@@ -101,6 +116,30 @@ export default class App extends Component<AppProps, AppState> {
           exact
           render={props => {
             return <EditTodo {...props} auth={this.props.auth} />
+          }}
+        />
+
+        <Route
+          path="/profile/"
+          exact
+          render={props => {
+            return <Profile {...props} auth={this.props.auth} />
+          }}
+        />
+
+        <Route
+          path="/users/"
+          exact
+          render={props => {
+            return <Users {...props} auth={this.props.auth} />
+          }}
+        />  
+
+       <Route
+          path="/followtodo/"
+          exact
+          render={props => {
+            return <FollowingTodos {...props} auth={this.props.auth} />
           }}
         />
 

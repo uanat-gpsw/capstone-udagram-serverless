@@ -6,6 +6,7 @@ import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 import { parseUserId } from '../auth/utils'
 import { createLogger } from '../utils/logger'
+import { getAllFollow } from './follow'
 
 const logger = createLogger('businessLogic')
 const todoAccess = new TodoAccess()
@@ -14,6 +15,20 @@ export async function getAllTodos(jwtToken: string): Promise<TodoItem[]> {
   const userId = parseUserId(jwtToken)
   return todoAccess.getAllTodos(userId)
 }
+
+
+export async function getFollowingTodos(jwtToken: string): Promise<TodoItem[]> {
+  logger.info("Calling getAllFollowers")
+  const follow = await getAllFollow(jwtToken)
+  const followers = follow.map(function(item) {
+    return item['followId'];
+  });
+  if(followers.length != 0)
+  return todoAccess.getFollowingTodos(followers)
+  else 
+  return []
+}
+
 
 export async function createTodo(
     CreateTodoRequest: CreateTodoRequest,

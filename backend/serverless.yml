@@ -1,5 +1,5 @@
 service:
-  name: serverless-todo-app
+  name: udagram-serverless
 
 plugins:
   - serverless-webpack
@@ -13,7 +13,7 @@ provider:
   name: aws
   runtime: nodejs12.x
 
-  stage: ${opt:stage, 'dev'}
+  stage: ${opt:stage, 'dev1'}
   region: ${opt:region, 'us-west-1'}
   tracing:
     lambda: true
@@ -22,6 +22,9 @@ provider:
     TODO_TABLE: Todo-${self:provider.stage}
     TODO_ID_INDEX: TodoIdIndex
     TODO_S3_BUCKET: todo-uanat-${self:provider.stage}
+    USER_TABLE: User-${self:provider.stage}
+    FOLLOW_TABLE: Follow-${self:provider.stage}
+    FOLLOW_ID_INDEX: FollowIdIndex
 custom:
   documentation:
     api:
@@ -36,11 +39,85 @@ custom:
       - name: UpdateTodoRequest
         contentType: application/json
         schema: ${file(models/update-todo-model.json)}
+      - name: UpdateUserRequest
+        contentType: application/json
+        schema: ${file(models/update-user-model.json)}     
 functions:
 
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}
+  GetUser:
+    handler: src/lambda/http/getUser.handler
+    events:
+      - http:
+          method: get
+          path: user
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}
+  GetFollowers:
+    handler: src/lambda/http/getFollowers.handler
+    events:
+      - http:
+          method: get
+          path: followers
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOLLOW_TABLE}/index/${self:provider.environment.FOLLOW_ID_INDEX}
+  GetUsers:
+    handler: src/lambda/http/getUsers.handler
+    events:
+      - http:
+          method: get
+          path: users
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOLLOW_TABLE}/index/${self:provider.environment.FOLLOW_ID_INDEX}
 
+  UpdateUser:
+    handler: src/lambda/http/updateUser.handler
+    events:
+      - http:
+          method: patch
+          path: user
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update User
+            description: Update User
+            requestModels:
+              'application/json': UpdateUserRequest
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}
   # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
@@ -55,7 +132,23 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
-  
+  GetFollowingTodos:
+    handler: src/lambda/http/getFollowingTodos.handler
+    events:
+      - http:
+          method: get
+          path: todosfollowing
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOLLOW_TABLE}/index/${self:provider.environment.FOLLOW_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
   # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
@@ -76,6 +169,35 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+
+  CreateFollower:
+    handler: src/lambda/http/followUser.handler
+    events:
+      - http:
+          method: post
+          path: follow
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOLLOW_TABLE}
+  
+  DeleteFollower:
+    handler: src/lambda/http/deleteFollowers.handler
+    events:
+      - http:
+          method: post
+          path: unfollow
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOLLOW_TABLE}
+
 
   # TODO: Configure this function
   UpdateTodo:
@@ -152,6 +274,39 @@ resources:
         TableName: ${self:provider.environment.TODO_TABLE}
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
+            KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+   UserDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.USER_TABLE}
+   FollowDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: followId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: followId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.FOLLOW_TABLE}
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.FOLLOW_ID_INDEX}
             KeySchema:
             - AttributeName: userId
               KeyType: HASH

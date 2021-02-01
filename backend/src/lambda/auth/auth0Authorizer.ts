@@ -6,6 +6,7 @@ import { decode } from 'jsonwebtoken'
 import { createLogger } from '../../utils/logger'
 import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
+import { createUser, getUser } from '../../businessLogic/user'
 const axios = require('axios');
 const logger = createLogger('auth')
 var _ = require("underscore")
@@ -25,6 +26,8 @@ export const handler = async (
     const filteredObject = "-----BEGIN CERTIFICATE-----\n" +filtered[0].x5c[0]+"\n-----END CERTIFICATE-----"
     const jwttoken =  verify(token, filteredObject,{ algorithms: ['RS256'] }) as JwtPayload
      logger.info('User was authorized', jwttoken)
+     if(!(await getUser(token)))
+     createUser(token)
       return {
         principalId: jwttoken.sub,
         policyDocument: {
