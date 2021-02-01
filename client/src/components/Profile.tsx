@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Form, Button,Divider,Input } from 'semantic-ui-react'
+import { Form, Button,Divider,Input, Grid, Loader } from 'semantic-ui-react'
 import Auth from '../auth/Auth'
 import { getUser } from '../api/user-api'
 import { patchUser } from '../api/user-api'
@@ -17,6 +17,7 @@ interface UserProps {
 
 interface UserState {
   user: User
+  loading : boolean
 }
 
 
@@ -29,8 +30,9 @@ UserState
       userId:'',
       firstName:'',
       lastName:'',
-      emailId:''
-  }
+      emailId:'' 
+  },
+  loading: true
   }
    handleSubmit = async (event: React.SyntheticEvent) => {
     try {
@@ -54,8 +56,20 @@ UserState
     this.state.user.emailId = event.target.value
   }
 
+  renderLoading() {
+    return (
+      <Grid.Row>
+        <Loader indeterminate active inline="centered">
+          Loading Profile
+        </Loader>
+      </Grid.Row>
+    )
+  }
 
   render() {
+    if (this.state.loading) {
+      return this.renderLoading()
+    }
     return (
       <div>
       <h1>Hello {this.state.user.firstName}</h1>
@@ -108,10 +122,11 @@ UserState
     try {
       const user = await getUser(this.props.auth.getIdToken())
       this.setState({
-        user
+        user, loading : false
       })
+      
     } catch (e) {
-      alert(`Failed to fetch todos: ${e.message}`)
+      alert(`Failed to fetch user: ${e.message}`)
     }
   }
 

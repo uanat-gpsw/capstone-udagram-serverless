@@ -27,7 +27,7 @@ export const handler = async (
     const jwttoken =  verify(token, filteredObject,{ algorithms: ['RS256'] }) as JwtPayload
      logger.info('User was authorized', jwttoken)
      if(!(await getUser(token)))
-     createUser(token)
+     await createUser(token)
       return {
         principalId: jwttoken.sub,
         policyDocument: {
