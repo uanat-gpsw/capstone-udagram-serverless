@@ -1,3 +1,4 @@
+import { error } from 'console'
 import dateFormat from 'dateformat'
 import { History } from 'history'
 import update from 'immutability-helper'
@@ -55,8 +56,9 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
         todos: [...this.state.todos, newTodo],
         newTodoName: ''
       })
-    } catch {
-      alert('Todo creation failed')
+    } catch(e) {
+      alert(`Todo creation failed ${e.message}`)
+      
     }
   }
 
